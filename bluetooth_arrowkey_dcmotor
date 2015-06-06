@@ -102,7 +102,7 @@ unsigned long timeout = 0;
 //Stop after the timeout
   if (millis() > timeout) {
     allOff;
-
+  }
 if(bt.available()) {
 char data = (char)bt.read();
 //always reset the timeout
@@ -123,7 +123,6 @@ switch(data) {
   case COMMAND_STOP:
     allOff(0);
     break;
-}
 }
 }
 }
