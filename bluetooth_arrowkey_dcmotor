@@ -98,15 +98,8 @@ void turnLeft(int speed)
  
 void loop()
 {
-unsigned long timeout = 0;
-//Stop after the timeout
-  if (millis() > timeout) {
-    allOff;
-  }
 if(bt.available()) {
 char data = (char)bt.read();
-//always reset the timeout
-timeout = millis() + 1000;
 switch(data) {
   case COMMAND_FORWARD:
     goForward(255);    
