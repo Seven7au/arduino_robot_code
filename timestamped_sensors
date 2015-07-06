@@ -1,0 +1,124 @@
+#include <OneWire.h> 
+#include <Time.h>  
+#define TIME_HEADER  "T"   // Header tag for serial time sync message
+#define TIME_REQUEST  7    // ASCII bell character requests a time sync message 
+
+int sensorValue1, sensorValue2, sensorValue3, sensorValue4;
+int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
+
+//Temperature chip i/o
+OneWire ds(DS18S20_Pin); // on digital pin 2
+
+void setup() {
+  Serial.begin(9600);
+    if (Serial.available()) {
+    processSyncMessage();
+  }
+  if (timeStatus()!= timeNotSet) {
+    digitalClockDisplay();  
+  }
+  if (timeStatus() == timeSet) {
+    digitalWrite(13, HIGH); // LED on if synced
+  } else {
+    digitalWrite(13, LOW);  // LED off if needs refresh
+  }
+  delay(1000);
+}
+
+float getTemp(){
+ //returns the temperature from one DS18S20 in DEG Celsius
+byte data[12];
+byte addr[8];
+ if ( !ds.search(addr)) {
+   //no more sensors on chain, reset search
+   ds.reset_search();
+   return -1000;
+ }
+ if ( OneWire::crc8( addr, 7) != addr[7]) {
+   Serial.println("CRC is not valid!");
+   return -1000;
+ }
+ if ( addr[0] != 0x10 && addr[0] != 0x28) {
+   Serial.print("Device is not recognized");
+   return -1000;
+ }
+ ds.reset();
+ ds.select(addr);
+ ds.write(0x44,1); // start conversion, with parasite power on at the end
+ byte present = ds.reset();
+ ds.select(addr);  
+ ds.write(0xBE); // Read Scratchpad
+ for (int i = 0; i < 9; i++) { // we need 9 bytes
+  data[i] = ds.read();
+ }
+ ds.reset_search();
+ byte MSB = data[1];
+ byte LSB = data[0];
+ float tempRead = ((MSB << 8) | LSB); //using two's compliment
+ float TemperatureSum = tempRead / 16;
+ return TemperatureSum;
+}
+void digitalClockDisplay(){
+  // digital clock display of the time
+  Serial.print(hour());
+  printDigits(minute());
+  printDigits(second());
+  Serial.print(" ");
+  Serial.print(day());
+  Serial.print(" ");
+  Serial.print(month());
+  Serial.print(" ");
+  Serial.print(year()); 
+  Serial.println(); 
+}
+
+void printDigits(int digits){
+  // utility function for digital clock display: prints preceding colon and leading 0
+  Serial.print(":");
+  if(digits < 10)
+    Serial.print('0');
+  Serial.print(digits);
+}
+
+
+void processSyncMessage() {
+  unsigned long pctime;
+  const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
+
+  if(Serial.find(TIME_HEADER)) {
+     pctime = Serial.parseInt();
+     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
+       setTime(pctime); // Sync Arduino clock to the time received on the serial port
+     }
+  }
+}
+
+time_t requestSync()
+{
+  Serial.write(TIME_REQUEST);  
+  return 0; // the time will be sent later in response to serial mesg
+}
+
+void loop() {
+ float temperature = getTemp();
+ Serial.print("Temperature,");
+ Serial.print(temperature);
+ Serial.print(",");
+ 
+ sensorValue1 = analogRead(0);  // read sensor in analog input 0
+  //sensorValue2 = analogRead(1);  // read sensor in analog input 1
+  //sensorValue3 = analogRead(2);  // read sensor in analog input 2
+  //sensorValue4 = analogRead(3);  // read sensor in analog input 3
+  Serial.print("Light,");
+  Serial.print(sensorValue1, DEC);  // print sensor 1
+  Serial.print(",\n");                // print ','
+ 
+  //Serial.print(sensorValue2, DEC);  // print sensor 2
+  //Serial.print(",");                // print ','
+  //Serial.print(sensorValue3, DEC);  // print sensor 3
+  //Serial.print(",");                // print ','
+  //Serial.println(sensorValue4, DEC);  // print sensor 4 and newline (println)
+  delay(2000);                    // wait 200ms for next reading
+  
+     
+}
