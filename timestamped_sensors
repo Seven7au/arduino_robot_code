@@ -1,8 +1,7 @@
+#include <Time.h>
+#define TIME_MSG_LEN 11 // time sync consists of a HEADER followed by ten ascii digits
+#define TIME_HEADER 'T' // Header tag for serial time sync message
 #include <OneWire.h> 
-#include <Time.h>  
-#define TIME_HEADER  "T"   // Header tag for serial time sync message
-#define TIME_REQUEST  7    // ASCII bell character requests a time sync message 
-
 int sensorValue1, sensorValue2, sensorValue3, sensorValue4;
 int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
 
@@ -10,21 +9,9 @@ int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
 OneWire ds(DS18S20_Pin); // on digital pin 2
 
 void setup() {
-  Serial.begin(9600);
-    if (Serial.available()) {
-    processSyncMessage();
-  }
-  if (timeStatus()!= timeNotSet) {
-    digitalClockDisplay();  
-  }
-  if (timeStatus() == timeSet) {
-    digitalWrite(13, HIGH); // LED on if synced
-  } else {
-    digitalWrite(13, LOW);  // LED off if needs refresh
-  }
-  delay(1000);
+Serial.begin(9600);
+Serial.println("\tWaiting for time sync message");
 }
-
 float getTemp(){
  //returns the temperature from one DS18S20 in DEG Celsius
 byte data[12];
@@ -58,67 +45,86 @@ byte addr[8];
  float TemperatureSum = tempRead / 16;
  return TemperatureSum;
 }
+
+void loop(){
+if(Serial.available() )
+{
+processSyncMessage();
+}
+if(timeStatus()!= timeNotSet)
+{
+// here if the time has been set
+digitalClockDisplay();
+delay(2000);
+}
+float temperature = getTemp();
+Serial.print(",");
+Serial.print("\t Temperature,");
+Serial.print(temperature);
+Serial.print(",");
+ 
+sensorValue1 = analogRead(0);  // read sensor in analog input 0
+//If you need more sensors then uncode the comments below
+//sensorValue2 = analogRead(1);  // read sensor in analog input 1
+//sensorValue3 = analogRead(2);  // read sensor in analog input 2
+//sensorValue4 = analogRead(3);  // read sensor in analog input 3
+Serial.print("Light,");
+Serial.print(sensorValue1, DEC);  // print sensor 1
+Serial.print(",\n");                // print ','
+ 
+//Serial.print(sensorValue2, DEC);  // print sensor 2
+//Serial.print(",");                // print ','
+//Serial.print(sensorValue3, DEC);  // print sensor 3
+//Serial.print(",");                // print ','
+//Serial.println(sensorValue4, DEC);  // print sensor 4 and newline (println)
+delay(2000);// wait 2000ms for next reading
+}
+
 void digitalClockDisplay(){
-  // digital clock display of the time
-  Serial.print(hour());
-  printDigits(minute());
-  printDigits(second());
-  Serial.print(" ");
-  Serial.print(day());
-  Serial.print(" ");
-  Serial.print(month());
-  Serial.print(" ");
-  Serial.print(year()); 
-  Serial.println(); 
+// digital clock display of the time
+Serial.print("\t");
+hourPrintDigits(hour());
+printDigits(minute());
+printDigits(second());
+Serial.print(",");
+Serial.print(day());
+Serial.print("/");
+Serial.print(month());
+Serial.print("/");
+Serial.print(year());
+Serial.println();
 }
-
 void printDigits(int digits){
-  // utility function for digital clock display: prints preceding colon and leading 0
-  Serial.print(":");
-  if(digits < 10)
-    Serial.print('0');
-  Serial.print(digits);
+// utility function for digital clock display: prints preceding colon and leading 0
+Serial.print(":");
+if(digits < 10)
+Serial.print('0');
+Serial.print(digits);
 }
 
+void hourPrintDigits(int digits){
+// utility function for digital clock display: prints preceding colon and leading 0
+Serial.print(" ");
+if(digits < 10)
+Serial.print('0');
+Serial.print(digits);
+}
 
 void processSyncMessage() {
-  unsigned long pctime;
-  const unsigned long DEFAULT_TIME = 1357041600; // Jan 1 2013
-
-  if(Serial.find(TIME_HEADER)) {
-     pctime = Serial.parseInt();
-     if( pctime >= DEFAULT_TIME) { // check the integer is a valid time (greater than Jan 1 2013)
-       setTime(pctime); // Sync Arduino clock to the time received on the serial port
-     }
-  }
+// if time sync available from serial port, update time and return true
+// time message consists of a header and ten ascii digits
+while(Serial.available() >= TIME_MSG_LEN ){
+char c = Serial.read() ;
+Serial.print(c);
+if( c == TIME_HEADER ) {
+time_t pctime = 0;
+for(int i=0; i < TIME_MSG_LEN -1; i++){
+c = Serial.read();
+if( c >= '0' && c <= '9'){
+pctime = (10 * pctime) + (c - '0') ; // convert digits to a number
 }
-
-time_t requestSync()
-{
-  Serial.write(TIME_REQUEST);  
-  return 0; // the time will be sent later in response to serial mesg
 }
-
-void loop() {
- float temperature = getTemp();
- Serial.print("Temperature,");
- Serial.print(temperature);
- Serial.print(",");
- 
- sensorValue1 = analogRead(0);  // read sensor in analog input 0
-  //sensorValue2 = analogRead(1);  // read sensor in analog input 1
-  //sensorValue3 = analogRead(2);  // read sensor in analog input 2
-  //sensorValue4 = analogRead(3);  // read sensor in analog input 3
-  Serial.print("Light,");
-  Serial.print(sensorValue1, DEC);  // print sensor 1
-  Serial.print(",\n");                // print ','
- 
-  //Serial.print(sensorValue2, DEC);  // print sensor 2
-  //Serial.print(",");                // print ','
-  //Serial.print(sensorValue3, DEC);  // print sensor 3
-  //Serial.print(",");                // print ','
-  //Serial.println(sensorValue4, DEC);  // print sensor 4 and newline (println)
-  delay(2000);                    // wait 200ms for next reading
-  
-     
+setTime(pctime); // Sync clock to the time received on serial port
+}
+}
 }
