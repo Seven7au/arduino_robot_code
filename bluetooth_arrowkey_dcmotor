@@ -66,32 +66,32 @@ void allOff(int speed)
  
 void goForward(int speed)
 {
-  myMotor1->setSpeed(255);
-  myMotor2->setSpeed(255);
+  myMotor1->setSpeed(speed);
+  myMotor2->setSpeed(speed);
   myMotor1->run(FORWARD);
   myMotor2->run(FORWARD);
 }
  
 void goBackward(int speed)
 {
-  myMotor1->setSpeed(255);
-  myMotor2->setSpeed(255);
+  myMotor1->setSpeed(speed);
+  myMotor2->setSpeed(speed);
   myMotor1->run(BACKWARD);
   myMotor2->run(BACKWARD);
 }
  
 void turnRight(int speed)
 {
-  myMotor1->setSpeed(200);
-  myMotor2->setSpeed(200);
+  myMotor1->setSpeed(speed);
+  myMotor2->setSpeed(speed);
   myMotor1->run(FORWARD);
   myMotor2->run(BACKWARD);
 }
  
 void turnLeft(int speed)
 {
-  myMotor1->setSpeed(200);
-  myMotor2->setSpeed(200);
+  myMotor1->setSpeed(speed);
+  myMotor2->setSpeed(speed);
   myMotor1->run(BACKWARD);
   myMotor2->run(FORWARD);
 }
@@ -102,16 +102,16 @@ if(bt.available()) {
 char data = (char)bt.read();
 switch(data) {
   case COMMAND_FORWARD:
-    goForward(0);  //not sure why, but as long as you have an integer in between the parentheses it works, but this doesn't change the speed.  
+    goForward(255);  //not sure why, but as long as you have an integer in between the parentheses it works, but this doesn't change the speed.  
     break; 
   case COMMAND_BACK:
-    goBackward(0);
+    goBackward(200);
     break;
   case COMMAND_LEFT:
-    turnLeft(0);
+    turnLeft(180);
     break;
   case COMMAND_RIGHT:
-    turnRight(0);
+    turnRight(180);
     break;
   case COMMAND_STOP:
     allOff(0);
