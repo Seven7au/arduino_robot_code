@@ -102,7 +102,7 @@ if(bt.available()) {
 char data = (char)bt.read();
 switch(data) {
   case COMMAND_FORWARD:
-    goForward(255);  //not sure why, but as long as you have an integer in between the parentheses it works, but this doesn't change the speed.  
+    goForward(255);
     break; 
   case COMMAND_BACK:
     goBackward(200);
